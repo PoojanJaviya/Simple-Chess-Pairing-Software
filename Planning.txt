@@ -1,0 +1,14 @@
+Swiss System pairing software:
+
+1. What will this software do ?
+- asks for how many rounds are going to get played
+- number of players going to participate
+- asks for player names and their chess.com ratings 
+- rank them according to their ratings
+- for first round pair them fully randomly 
+- show standings after first round
+- for later rounds pairings will be random + their score 
+- show standings after each rounds
+
+
+
