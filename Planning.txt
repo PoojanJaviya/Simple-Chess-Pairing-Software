@@ -10,5 +10,3 @@ Swiss System pairing software:
 - for later rounds pairings will be random + their score 
 - show standings after each rounds
 
-
-
