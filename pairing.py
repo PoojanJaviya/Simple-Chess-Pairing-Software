@@ -1,30 +1,34 @@
+#This is a file where pairing logic is.
+
 from input import taking_input_storing_in_dataframe
+from database import  init_db, ordered_by_ratings, add_pairings_to_database
 
 #pairing the players
-paired = set()
-pairings = []
 
+init_db()
 df = taking_input_storing_in_dataframe()
+ordered_list = ordered_by_ratings()
 
-def pairing_players(df):
-    for i in range(len(df)-1):
-        player1 = df.iloc[i]["Names"]
-        player2 = df.iloc[i+1]["Names"]
-        if player1 in paired or player2 in paired:
+def pairing_players():
+    players = ordered_by_ratings()
+    paired = set()
+    pairings = []
+    for i in range(len(players)-1):
+        player1_SrNo = players[i][0]
+        player2_SrNo = players[i+1][0]
+        if player1_SrNo in paired or player2_SrNo in paired:
             continue
-        
-        paired.add(player1)
-        paired.add(player2)
 
-        pairings.append((player1,player2))
+        pairings.append((player1_SrNo,player2_SrNo))
+        paired.add(player1_SrNo)
+        paired.add(player2_SrNo)
 
-    #If there are odd players then one gets a bye
     if(len(df)%2 == 1):
-        pairings.append((df["Names"].iloc[-1],"Bye"))
-        paired.add(df["Names"].iloc[-1])
-    return paired , pairings
+        pairings.append((players[-1][0],None))
+        paired.add(players[-1][0])
 
-pairing_players(df)
-print(paired)
-print(pairings)
+    return pairings
+pairings = pairing_players()
+add_pairings_to_database(pairings)
+
 
