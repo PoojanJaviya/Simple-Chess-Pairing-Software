@@ -1,34 +1,39 @@
 #This is a file where pairing logic is.
 
-from input import taking_input_storing_in_dataframe
-from database import  init_db, ordered_by_ratings, add_pairings_to_database
+from database import ordered_by_ratings, add_pairings_to_database
+import random
 
-#pairing the players
 
-init_db()
-df = taking_input_storing_in_dataframe()
-ordered_list = ordered_by_ratings()
-
+# First Round pairing logic
 def pairing_players():
-    players = ordered_by_ratings()
+    table = ordered_by_ratings()
     paired = set()
     pairings = []
-    for i in range(len(players)-1):
-        player1_SrNo = players[i][0]
-        player2_SrNo = players[i+1][0]
-        if player1_SrNo in paired or player2_SrNo in paired:
-            continue
+    possible_pairings = []
+    players = []
+    for i in table:
+        players.append[i[0]]
 
-        pairings.append((player1_SrNo,player2_SrNo))
-        paired.add(player1_SrNo)
-        paired.add(player2_SrNo)
+    if(len(players)%2==1):
+        players.append(None)
+        
+    for i in (players):
+        ls = [(a,b) for a in players for b in players if(a!=b) ]
+        possible_pairings = possible_pairings + ls
+    print(players)
+    print(possible_pairings)
+    unpaired = players.copy()
 
-    if(len(df)%2 == 1):
-        pairings.append((players[-1][0],None))
-        paired.add(players[-1][0])
-
+    while(len(unpaired)!=0):   
+        pairing = (random.choice(possible_pairings))
+        if(pairing[0] not in paired and pairing[1] not in paired and pairing not in pairings):
+            pairings.append(pairing)
+            paired.add(pairing[0])
+            paired.add(pairing[1])
+            unpaired.remove(pairing[0])
+            unpaired.remove(pairing[1])
     return pairings
-pairings = pairing_players()
-add_pairings_to_database(pairings)
+
+
 
 
