@@ -20,10 +20,8 @@ def pairing_players():
     for i in (players):
         ls = [(a,b) for a in players for b in players if(a!=b) ]
         possible_pairings = possible_pairings + ls
-    print(players)
-    print(possible_pairings)
+        
     unpaired = players.copy()
-
     while(len(unpaired)!=0):   
         pairing = (random.choice(possible_pairings))
         if(pairing[0] not in paired and pairing[1] not in paired and pairing not in pairings):
