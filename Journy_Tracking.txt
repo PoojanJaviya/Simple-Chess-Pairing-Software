@@ -1,0 +1,21 @@
+Day 1:
+- Did planning
+- Setup GitHub
+
+Day 2:
+- Tested some pushing 
+- added input files
+- wrote some input code for it
+
+Day 3:
+- Added Pandas DataFrame
+
+Day 4:
+- Added Pairing logic for the first round
+- Added every code into each file and in added in function
+
+Day 5:
+- Added schema file and database.py file 
+- added database files to gitignore
+
+ 

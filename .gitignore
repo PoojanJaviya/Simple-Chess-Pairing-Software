@@ -1,2 +1,13 @@
-*.txt
-*.db
+# Virtual Environment
+.venv/
+
+# Instance folder (contains the database)
+instance/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# IDE-specific folders
+.idea/
+.vscode/
