@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Pairing Software</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <nav class="bg-white shadow-md">
+        <div class="max-w-4xl mx-auto px-4">
+            <div class="flex justify-between">
+                <div class="flex space-x-4">
+                    <div>
+                        <a href="{{ url_for('main.index') }}" class="flex items-center py-5 px-2 text-gray-700 hover:text-gray-900">
+                            <span class="font-bold text-lg">Chess Tournament</span>
+                        </a>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <a href="{{ url_for('main.index') }}" class="py-5 px-3 text-gray-700 hover:text-gray-900">Players</a>
+                        <a href="{{ url_for('main.view_pairings') }}" class="py-5 px-3 text-gray-700 hover:text-gray-900">Pairings</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="py-10">
+        <div class="max-w-4xl mx-auto px-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 p-4 rounded-md {{ 'bg-green-100 text-green-700' if category == 'success' else 'bg-red-100 text-red-700' }}" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+</body>
+</html>
+

@@ -1,0 +1,41 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-md">
+    <h1 class="text-3xl font-bold mb-6">Current Pairings</h1>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white">
+            <thead class="bg-gray-200">
+                <tr>
+                    <th class="py-2 px-4 text-left">Board</th>
+                    <th class="py-2 px-4 text-left">White</th>
+                    <th class="py-2 px-4 text-left">Black</th>
+                    <th class="py-2 px-4 text-left">Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pairing in pairings %}
+                <tr class="border-b">
+                    <td class="py-2 px-4 font-semibold">{{ loop.index }}</td>
+                    <td class="py-2 px-4">{{ pairing.player1_name }}</td>
+                    <td class="py-2 px-4">
+                        {% if pairing.player2_name %}
+                            {{ pairing.player2_name }}
+                        {% else %}
+                            <span class="text-gray-500 italic">(BYE)</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-2 px-4">{{ pairing.result if pairing.result else 'Pending' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="py-4 px-4 text-center text-gray-500">No pairings have been generated yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
