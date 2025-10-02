@@ -2,7 +2,10 @@
 
 {% block content %}
 <div class="bg-white p-6 rounded-lg shadow-md">
-    <h1 class="text-3xl font-bold mb-6">Current Pairings</h1>
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold">Current Pairings</h1>
+        <a href="{{ url_for('main.index') }}" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300">Back to Players</a>
+    </div>
     
     <div class="overflow-x-auto">
         <table class="min-w-full bg-white">
@@ -26,7 +29,27 @@
                             <span class="text-gray-500 italic">(BYE)</span>
                         {% endif %}
                     </td>
-                    <td class="py-2 px-4">{{ pairing.result if pairing.result else 'Pending' }}</td>
+                    <td class="py-2 px-4">
+                        {% if pairing.result != 'pending' and pairing.result is not none %}
+                            <span class="font-semibold">{{ pairing.result }}</span>
+                        {% elif pairing.player2_name is none %}
+                            <span class="font-semibold">1-0</span> <!-- Auto-win for bye -->
+                        {% else %}
+                            <form action="{{ url_for('main.record_result') }}" method="post" class="flex items-center space-x-2">
+                                <!-- Pass the visual board number for notifications -->
+                                <input type="hidden" name="board_display_number" value="{{ loop.index }}">
+                                <input type="hidden" name="table_no" value="{{ pairing.Table_No }}">
+                                <input type="hidden" name="player1_sr_no" value="{{ pairing.player1_SrNo }}">
+                                <input type="hidden" name="player2_sr_no" value="{{ pairing.player2_SrNo if pairing.player2_SrNo else '' }}">
+                                <select name="result" class="border border-gray-300 rounded-md p-1">
+                                    <option value="1-0">1-0</option>
+                                    <option value="0-1">0-1</option>
+                                    <option value="0.5-0.5">½ - ½</option>
+                                </select>
+                                <button type="submit" class="bg-gray-600 text-white text-xs font-bold py-1 px-2 rounded hover:bg-gray-700">Save</button>
+                            </form>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% else %}
                 <tr>
