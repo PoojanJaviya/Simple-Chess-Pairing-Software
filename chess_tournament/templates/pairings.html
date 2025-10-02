@@ -3,8 +3,16 @@
 {% block content %}
 <div class="bg-white p-6 rounded-lg shadow-md">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold">Current Pairings</h1>
-        <a href="{{ url_for('main.index') }}" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300">Back to Players</a>
+        <div>
+            <h1 class="text-3xl font-bold">Pairings for Round {{ current_round }}</h1>
+            <p class="text-gray-600">Enter results for each match below.</p>
+        </div>
+        <!-- "Conclude Round" Button remains unchanged -->
+        <form action="{{ url_for('main.conclude_round') }}" method="post" onsubmit="return confirm('Are you sure you want to conclude this round? Any remaining games will be marked as a 0-0 forfeit.');">
+            <button type="submit" class="bg-red-500 text-white font-bold py-2 px-4 rounded-md hover:bg-red-600 transition duration-300">
+                Conclude Round
+            </button>
+        </form>
     </div>
     
     <div class="overflow-x-auto">
@@ -30,23 +38,23 @@
                         {% endif %}
                     </td>
                     <td class="py-2 px-4">
-                        {% if pairing.result != 'pending' and pairing.result is not none %}
-                            <span class="font-semibold">{{ pairing.result }}</span>
-                        {% elif pairing.player2_name is none %}
+                        <!-- This logic now always shows the dropdown for playable games -->
+                        {% if pairing.player2_name is none %}
                             <span class="font-semibold">1-0</span> <!-- Auto-win for bye -->
                         {% else %}
-                            <form action="{{ url_for('main.record_result') }}" method="post" class="flex items-center space-x-2">
-                                <!-- Pass the visual board number for notifications -->
+                            <form action="{{ url_for('main.record_result') }}" method="post">
                                 <input type="hidden" name="board_display_number" value="{{ loop.index }}">
                                 <input type="hidden" name="table_no" value="{{ pairing.Table_No }}">
                                 <input type="hidden" name="player1_sr_no" value="{{ pairing.player1_SrNo }}">
                                 <input type="hidden" name="player2_sr_no" value="{{ pairing.player2_SrNo if pairing.player2_SrNo else '' }}">
-                                <select name="result" class="border border-gray-300 rounded-md p-1">
-                                    <option value="1-0">1-0</option>
-                                    <option value="0-1">0-1</option>
-                                    <option value="0.5-0.5">½ - ½</option>
+                                <select name="result" class="border border-gray-300 rounded-md p-1" onchange="this.form.submit()">
+                                    <!-- The selected option is now determined by the current result in the database -->
+                                    <option disabled {% if pairing.result == 'pending' %}selected{% endif %}>Select Result</option>
+                                    <option value="1-0" {% if pairing.result == '1-0' %}selected{% endif %}>1-0</option>
+                                    <option value="0-1" {% if pairing.result == '0-1' %}selected{% endif %}>0-1</option>
+                                    <option value="0.5-0.5" {% if pairing.result == '0.5-0.5' %}selected{% endif %}>½ - ½</option>
+                                    <option value="0-0" {% if pairing.result == '0-0' %}selected{% endif %}>0-0</option>
                                 </select>
-                                <button type="submit" class="bg-gray-600 text-white text-xs font-bold py-1 px-2 rounded hover:bg-gray-700">Save</button>
                             </form>
                         {% endif %}
                     </td>

@@ -5,41 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chess Pairing Software</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Simple style for flash messages */
+        .flash {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+        }
+        .flash.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .flash.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .flash.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
-    <nav class="bg-white shadow-md">
-        <div class="max-w-4xl mx-auto px-4">
-            <div class="flex justify-between">
-                <div class="flex space-x-4">
-                    <div>
-                        <a href="{{ url_for('main.index') }}" class="flex items-center py-5 px-2 text-gray-700 hover:text-gray-900">
-                            <span class="font-bold text-lg">Chess Tournament</span>
-                        </a>
-                    </div>
-                    <div class="flex items-center space-x-1">
-                        <a href="{{ url_for('main.index') }}" class="py-5 px-3 text-gray-700 hover:text-gray-900">Players</a>
-                        <a href="{{ url_for('main.view_pairings') }}" class="py-5 px-3 text-gray-700 hover:text-gray-900">Pairings</a>
-                    </div>
-                </div>
-            </div>
+<body class="bg-gray-100 font-sans">
+    <nav class="bg-gray-800 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Chess Tournament Manager</h1>
+            <ul class="flex space-x-6">
+                <!-- **BUG FIX**: Changed "Players" to "Standings" for clarity -->
+                <li><a href="{{ url_for('main.index') }}" class="hover:text-gray-300">Standings</a></li>
+                <li><a href="{{ url_for('main.view_pairings') }}" class="hover:text-gray-300">Current Pairings</a></li>
+            </ul>
         </div>
     </nav>
 
-    <main class="py-10">
-        <div class="max-w-4xl mx-auto px-4">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="mb-4 p-4 rounded-md {{ 'bg-green-100 text-green-700' if category == 'success' else 'bg-red-100 text-red-700' }}" role="alert">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            {% block content %}{% endblock %}
-        </div>
-    </main>
+    <main class="container mx-auto p-6">
+        <!-- Flash messages will appear here -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
+        {% block content %}{% endblock %}
+    </main>
 </body>
 </html>
 
