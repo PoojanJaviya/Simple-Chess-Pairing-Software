@@ -25,15 +25,23 @@
         <div class="bg-white p-6 rounded-lg shadow-md">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-2xl font-bold">Standings (Round {{ current_round }})</h2>
-                <form action="{{ url_for('main.generate_pairings') }}" method="post">
-                    <button type="submit" class="bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 transition duration-300">
-                        {% if current_round == 0 %}
-                            Generate Round 1 Pairings
-                        {% else %}
-                            Generate Round {{ current_round + 1 }} Pairings
-                        {% endif %}
-                    </button>
-                </form>
+                <div class="flex gap-2">
+                    <form action="{{ url_for('main.generate_pairings') }}" method="post">
+                        <button type="submit" class="bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 transition duration-300">
+                            {% if current_round == 0 %}
+                                Generate Round 1 Pairings
+                            {% else %}
+                                Generate Round {{ current_round + 1 }} Pairings
+                            {% endif %}
+                        </button>
+                    </form>
+                    <!-- New Export Button -->
+                    {% if current_round > 0 %}
+                    <a href="{{ url_for('main.export_results') }}" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 transition duration-300 flex items-center">
+                        Download CSV
+                    </a>
+                    {% endif %}
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full bg-white">
@@ -43,6 +51,8 @@
                             <th class="py-2 px-4 text-left">Name</th>
                             <th class="py-2 px-4 text-left">Rating</th>
                             <th class="py-2 px-4 text-left">Points</th>
+                            <!-- New Tiebreak Column -->
+                            <th class="py-2 px-4 text-left text-gray-600 text-sm">Tiebreak (Buchholz)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -52,10 +62,11 @@
                             <td class="py-2 px-4">{{ player.name }}</td>
                             <td class="py-2 px-4">{{ player.rating }}</td>
                             <td class="py-2 px-4 font-bold">{{ player.points }}</td>
+                            <td class="py-2 px-4 text-gray-600">{{ player.buchholz }}</td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="4" class="py-4 px-4 text-center text-gray-500">No players have been added yet.</td>
+                            <td colspan="5" class="py-4 px-4 text-center text-gray-500">No players have been added yet.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -70,4 +81,3 @@
     </div>
 </div>
 {% endblock %}
-

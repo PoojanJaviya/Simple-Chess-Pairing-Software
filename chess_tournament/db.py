@@ -2,6 +2,7 @@ import sqlite3
 import click
 from flask import current_app, g
 
+# --- CORE CONNECTION FUNCTIONS ---
 def get_db():
     """Connect to the application database."""
     if 'db' not in g:
@@ -35,7 +36,7 @@ def init_app(app):
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
 
-# --- Player Functions ---
+# --- PLAYER FUNCTIONS ---
 def get_all_players_from_db():
     """Get all players, ordered by points, then rating."""
     db = get_db()
@@ -54,7 +55,7 @@ def update_player_score_in_db(player_sr_no, points_to_add):
     db.execute('UPDATE players SET points = points + ? WHERE SrNo = ?', (points_to_add, player_sr_no))
     db.commit()
 
-# --- Pairing/Match Functions ---
+# --- PAIRING/MATCH FUNCTIONS ---
 def add_pairings_to_db(pairings, round_number):
     """Add a list of pairings for a specific round."""
     db = get_db()
@@ -88,7 +89,6 @@ def get_latest_round_number():
     """Get the number of the most recent round."""
     db = get_db()
     result = db.execute('SELECT MAX(round_number) FROM pairings').fetchone()
-    # **BUG FIX**: Changed 'none' to 'None'
     return result[0] if result[0] is not None else 0
 
 def update_match_result_in_db(table_no, result):
@@ -117,7 +117,17 @@ def are_all_results_in():
     
     return pending_matches == 0
 
-# --- Tournament Functions ---
+def get_all_finished_matches_from_db():
+    """Get all matches that have been played (for tiebreak calculation)."""
+    db = get_db()
+    matches = db.execute('''
+        SELECT player1_SrNo, player2_SrNo, result 
+        FROM pairings 
+        WHERE result IS NOT 'pending' AND player2_SrNo IS NOT NULL
+    ''').fetchall()
+    return matches
+
+# --- TOURNAMENT FUNCTIONS ---
 def conclude_round_in_db():
     """Finalizes the current round by marking pending games as 0-0."""
     db = get_db()
@@ -136,4 +146,3 @@ def reset_tournament_in_db():
     db.execute('DELETE FROM players')
     db.execute("DELETE FROM sqlite_sequence WHERE name IN ('players', 'pairings')")
     db.commit()
-

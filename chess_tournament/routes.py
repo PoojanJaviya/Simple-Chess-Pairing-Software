@@ -1,4 +1,6 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+import csv
+import io
+from flask import Blueprint, render_template, request, flash, redirect, url_for, make_response
 from . import db
 from . import pairing_logic
 
@@ -6,7 +8,7 @@ bp = Blueprint('main', __name__)
 
 @bp.route('/', methods=('GET', 'POST'))
 def index():
-    """Main page: lists players and handles new player form."""
+    """Main page: lists players with tiebreaks."""
     if request.method == 'POST':
         name = request.form['name']
         rating = request.form['rating']
@@ -28,9 +30,38 @@ def index():
 
         flash(error, 'error')
     
-    players = db.get_all_players_from_db()
+    # Fetch data and calculate tiebreaks
+    raw_players = db.get_all_players_from_db()
+    matches = db.get_all_finished_matches_from_db()
+    # This new function returns a sorted list with 'buchholz' added
+    detailed_players = pairing_logic.calculate_standings_with_tiebreaks(raw_players, matches)
+    
     current_round = db.get_latest_round_number()
-    return render_template('index.html', players=players, current_round=current_round)
+    return render_template('index.html', players=detailed_players, current_round=current_round)
+
+
+@bp.route('/export_results')
+def export_results():
+    """Generates and downloads a CSV file of the final standings."""
+    raw_players = db.get_all_players_from_db()
+    matches = db.get_all_finished_matches_from_db()
+    detailed_players = pairing_logic.calculate_standings_with_tiebreaks(raw_players, matches)
+
+    # Create CSV in memory
+    si = io.StringIO()
+    cw = csv.writer(si)
+    
+    # Write Header
+    cw.writerow(['Rank', 'Name', 'Rating', 'Points', 'Tiebreak (Buchholz)'])
+    
+    # Write Rows
+    for rank, p in enumerate(detailed_players, 1):
+        cw.writerow([rank, p['name'], p['rating'], p['points'], p['buchholz']])
+
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = "attachment; filename=tournament_results.csv"
+    output.headers["Content-type"] = "text/csv"
+    return output
 
 
 @bp.route('/generate-pairings', methods=('POST',))
@@ -83,11 +114,10 @@ def record_result():
     player2_sr_no_str = request.form.get('player2_sr_no')
     player2_sr_no = int(player2_sr_no_str) if player2_sr_no_str else None
 
-    # --- Score Correction Logic ---
     old_match = db.get_match_by_table_no(table_no)
     old_result = old_match['result']
 
-    # 1. Subtract points from the old result
+    # 1. Reverse old score
     if old_result == '1-0':
         db.update_player_score_in_db(player1_sr_no, -1.0)
     elif old_result == '0-1' and player2_sr_no:
@@ -97,10 +127,10 @@ def record_result():
         if player2_sr_no:
             db.update_player_score_in_db(player2_sr_no, -0.5)
 
-    # 2. Update the match to the new result
+    # 2. Apply new result
     db.update_match_result_in_db(table_no, new_result)
 
-    # 3. Add points for the new result
+    # 3. Add new score
     if new_result == '1-0':
         db.update_player_score_in_db(player1_sr_no, 1.0)
     elif new_result == '0-1' and player2_sr_no:
@@ -119,7 +149,7 @@ def conclude_round():
     """Finalizes the current round."""
     current_round = db.get_latest_round_number()
     db.conclude_round_in_db()
-    flash(f'Round {current_round} has been concluded. You can now generate the next round.', 'success')
+    flash(f'Round {current_round} has been concluded.', 'success')
     return redirect(url_for('main.index'))
 
 
@@ -129,4 +159,3 @@ def reset_tournament():
     db.reset_tournament_in_db()
     flash('Tournament has been reset. All players and pairings deleted.', 'success')
     return redirect(url_for('main.index'))
-
