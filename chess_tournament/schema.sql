@@ -1,8 +1,10 @@
--- Delete existing tables if they exist to ensure a fresh start
+-- Drop existing tables
 DROP TABLE IF EXISTS players;
 DROP TABLE IF EXISTS pairings;
+DROP TABLE IF EXISTS tournaments;
+DROP TABLE IF EXISTS history_standings;
 
--- Create the players table with a primary key
+-- Active Tournament Tables
 CREATE TABLE players(
     SrNo INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
@@ -10,7 +12,6 @@ CREATE TABLE players(
     points REAL DEFAULT 0.0
 );
 
--- Create the pairings table with the new round_number column
 CREATE TABLE pairings(
     Table_No INTEGER PRIMARY KEY AUTOINCREMENT,
     round_number INTEGER NOT NULL,
@@ -19,4 +20,22 @@ CREATE TABLE pairings(
     result TEXT DEFAULT 'pending',
     FOREIGN KEY (player1_SrNo) REFERENCES players(SrNo),
     FOREIGN KEY (player2_SrNo) REFERENCES players(SrNo)
+);
+
+-- History / Archiving Tables
+CREATE TABLE tournaments(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    date_concluded TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE history_standings(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tournament_id INTEGER NOT NULL,
+    rank INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    rating INTEGER NOT NULL,
+    points REAL NOT NULL,
+    buchholz REAL NOT NULL,
+    FOREIGN KEY (tournament_id) REFERENCES tournaments(id)
 );

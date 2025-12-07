@@ -1,6 +1,39 @@
 {% extends 'layout.html' %}
 
 {% block content %}
+
+<!-- STATE 1: NO TOURNAMENT STARTED (Ask Name First) -->
+{% if not tournament_name %}
+<div class="max-w-md mx-auto mt-10">
+    <div class="bg-white p-8 rounded-lg shadow-lg border-t-4 border-blue-600">
+        <h2 class="text-3xl font-bold mb-2 text-gray-800">Start New Tournament</h2>
+        <p class="text-gray-600 mb-6">Enter a name to begin the pairing process.</p>
+        
+        <form action="{{ url_for('main.set_tournament_name') }}" method="post">
+            <div class="mb-5">
+                <label class="block text-gray-700 font-bold mb-2">Tournament Name</label>
+                <input type="text" name="tournament_name" placeholder="e.g. Sunday Rapid Open" required autofocus
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-300 text-lg">
+                Create Tournament &rarr;
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- STATE 2: DASHBOARD (Name is set) -->
+{% else %}
+<div class="mb-6 flex justify-between items-center border-b pb-4">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-800">{{ tournament_name }}</h1>
+        <p class="text-sm text-gray-500">Tournament in Progress</p>
+    </div>
+    <a href="{{ url_for('main.reset_and_home') }}" onclick="return confirm('Quit this tournament? Data will be lost.')" class="text-red-500 hover:text-red-700 font-medium">
+        Quit / Reset
+    </a>
+</div>
+
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <!-- Player Registration Form -->
     <div class="md:col-span-1">
@@ -35,15 +68,9 @@
                             {% endif %}
                         </button>
                     </form>
-                    <!-- New Export Button -->
-                    {% if current_round > 0 %}
-                    <a href="{{ url_for('main.export_results') }}" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 transition duration-300 flex items-center">
-                        Download CSV
-                    </a>
-                    {% endif %}
                 </div>
             </div>
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto mb-6">
                 <table class="min-w-full bg-white">
                     <thead class="bg-gray-200">
                         <tr>
@@ -51,8 +78,7 @@
                             <th class="py-2 px-4 text-left">Name</th>
                             <th class="py-2 px-4 text-left">Rating</th>
                             <th class="py-2 px-4 text-left">Points</th>
-                            <!-- New Tiebreak Column -->
-                            <th class="py-2 px-4 text-left text-gray-600 text-sm">Tiebreak (Buchholz)</th>
+                            <th class="py-2 px-4 text-left text-gray-600 text-sm">Tiebreak</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -66,18 +92,33 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="5" class="py-4 px-4 text-center text-gray-500">No players have been added yet.</td>
+                            <td colspan="5" class="py-4 px-4 text-center text-gray-500">No players registered yet.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <div class="mt-6 border-t pt-4">
-                <form action="{{ url_for('main.reset_tournament') }}" method="post" onsubmit="return confirm('Are you sure you want to reset the entire tournament? This will delete all players and results.');">
-                    <button type="submit" class="w-full bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-700 transition duration-300">Reset Tournament</button>
-                </form>
+
+            <!-- END TOURNAMENT SECTION -->
+            {% if current_round > 0 %}
+            <div class="border-t pt-6 bg-gray-50 p-4 rounded-md">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-bold">Conclude Tournament</h3>
+                        <p class="text-sm text-gray-600">Archive results for <strong>{{ tournament_name }}</strong></p>
+                    </div>
+                    <form action="{{ url_for('main.end_tournament') }}" method="post">
+                        <!-- Name is already in session, but we can pass it implicitly -->
+                        <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-md hover:bg-indigo-700 transition duration-300" onclick="return confirm('Archive results and end tournament?');">
+                            End & Save
+                        </button>
+                    </form>
+                </div>
             </div>
+            {% endif %}
+            
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}

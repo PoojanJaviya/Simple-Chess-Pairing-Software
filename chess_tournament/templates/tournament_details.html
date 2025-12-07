@@ -1,0 +1,64 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    
+    {% if is_fresh %}
+    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 shadow-md" role="alert">
+        <p class="font-bold">Tournament Concluded!</p>
+        <p>The results have been successfully archived. You can now export the data or clear the board for a new event.</p>
+    </div>
+    {% endif %}
+
+    <div class="bg-white p-8 rounded-lg shadow-md">
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+            <div>
+                <h1 class="text-3xl font-bold">{{ tournament.name }}</h1>
+                <p class="text-gray-500">Concluded: {{ tournament.date_concluded }}</p>
+            </div>
+            
+            <div class="flex gap-4">
+                <a href="{{ url_for('main.export_history', tournament_id=tournament.id) }}" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-md hover:bg-indigo-700 transition duration-300 shadow-md">
+                    Download Excel/CSV
+                </a>
+                
+                {% if is_fresh %}
+                <a href="{{ url_for('main.reset_and_home') }}" class="bg-gray-800 text-white font-bold py-2 px-6 rounded-md hover:bg-gray-900 transition duration-300 shadow-md">
+                    Done / Go Home
+                </a>
+                {% else %}
+                <a href="{{ url_for('main.history') }}" class="bg-gray-500 text-white font-bold py-2 px-6 rounded-md hover:bg-gray-600 transition duration-300">
+                    Back to History
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <h2 class="text-xl font-bold mb-4">Final Standings</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border rounded-lg">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="py-2 px-4 text-left">Rank</th>
+                        <th class="py-2 px-4 text-left">Name</th>
+                        <th class="py-2 px-4 text-left">Rating</th>
+                        <th class="py-2 px-4 text-left">Points</th>
+                        <th class="py-2 px-4 text-left">Tiebreak</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in standings %}
+                    <tr class="border-b">
+                        <td class="py-2 px-4 font-bold">{{ p.rank }}</td>
+                        <td class="py-2 px-4">{{ p.name }}</td>
+                        <td class="py-2 px-4">{{ p.rating }}</td>
+                        <td class="py-2 px-4 font-bold">{{ p.points }}</td>
+                        <td class="py-2 px-4 text-gray-600">{{ p.buchholz }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

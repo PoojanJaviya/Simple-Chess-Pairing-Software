@@ -78,7 +78,8 @@ def calculate_standings_with_tiebreaks(players, matches):
         p1, p2 = m['player1_SrNo'], m['player2_SrNo']
         # Add each other to their opponents list
         opponents_map[p1].append(p2)
-        opponents_map[p2].append(p1)
+        if p2 is not None:
+            opponents_map[p2].append(p1)
 
     # 3. Calculate Buchholz and convert rows to mutable dicts
     final_standings = []

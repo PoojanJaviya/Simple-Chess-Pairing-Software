@@ -1,6 +1,6 @@
 import csv
 import io
-from flask import Blueprint, render_template, request, flash, redirect, url_for, make_response
+from flask import Blueprint, render_template, request, flash, redirect, url_for, make_response, session
 from . import db
 from . import pairing_logic
 
@@ -8,12 +8,19 @@ bp = Blueprint('main', __name__)
 
 @bp.route('/', methods=('GET', 'POST'))
 def index():
-    """Main page: lists players with tiebreaks."""
+    # 1. Check if Tournament Name is set in Session
+    tournament_name = session.get('tournament_name')
+
+    # If NO name is set, we just render the template. 
+    # The template will handle showing the "Enter Name" form instead of the dashboard.
+    if not tournament_name:
+        return render_template('index.html', tournament_name=None)
+
+    # If Name IS set, proceed with Player Logic
     if request.method == 'POST':
         name = request.form['name']
         rating = request.form['rating']
         error = None
-
         if not name: error = 'Name is required.'
         elif not rating: error = 'Rating is required.'
         
@@ -27,87 +34,63 @@ def index():
             except ValueError as e:
                 flash(str(e), 'error')
             return redirect(url_for('main.index'))
-
         flash(error, 'error')
     
-    # Fetch data and calculate tiebreaks
+    # Calculate live standings
     raw_players = db.get_all_players_from_db()
     matches = db.get_all_finished_matches_from_db()
-    # This new function returns a sorted list with 'buchholz' added
     detailed_players = pairing_logic.calculate_standings_with_tiebreaks(raw_players, matches)
-    
     current_round = db.get_latest_round_number()
-    return render_template('index.html', players=detailed_players, current_round=current_round)
-
-
-@bp.route('/export_results')
-def export_results():
-    """Generates and downloads a CSV file of the final standings."""
-    raw_players = db.get_all_players_from_db()
-    matches = db.get_all_finished_matches_from_db()
-    detailed_players = pairing_logic.calculate_standings_with_tiebreaks(raw_players, matches)
-
-    # Create CSV in memory
-    si = io.StringIO()
-    cw = csv.writer(si)
     
-    # Write Header
-    cw.writerow(['Rank', 'Name', 'Rating', 'Points', 'Tiebreak (Buchholz)'])
-    
-    # Write Rows
-    for rank, p in enumerate(detailed_players, 1):
-        cw.writerow([rank, p['name'], p['rating'], p['points'], p['buchholz']])
+    return render_template('index.html', players=detailed_players, current_round=current_round, tournament_name=tournament_name)
 
-    output = make_response(si.getvalue())
-    output.headers["Content-Disposition"] = "attachment; filename=tournament_results.csv"
-    output.headers["Content-type"] = "text/csv"
-    return output
+@bp.route('/set-name', methods=('POST',))
+def set_tournament_name():
+    """Sets the tournament name in the session to start the flow."""
+    name = request.form['tournament_name']
+    if name:
+        session['tournament_name'] = name
+        # Also ensure DB is clear for a fresh start
+        db.reset_tournament_in_db() 
+        flash(f'Tournament "{name}" started! Now add players.', 'success')
+    return redirect(url_for('main.index'))
 
-
+# --- PAIRING & RESULTS ROUTES ---
 @bp.route('/generate-pairings', methods=('POST',))
 def generate_pairings():
-    """Generates pairings only if the previous round is complete."""
     if not db.are_all_results_in():
         flash('Cannot generate next round. The current round must be concluded first.', 'error')
         return redirect(url_for('main.view_pairings'))
-
     players = db.get_all_players_from_db()
     if len(players) < 2:
-        flash('You need at least two players to generate pairings.', 'error')
+        flash('You need at least two players.', 'error')
         return redirect(url_for('main.index'))
-    
     latest_round = db.get_latest_round_number()
     next_round = latest_round + 1
-
     if next_round == 1:
         pairings = pairing_logic.generate_first_round_pairs(players)
     else:
         history = db.get_match_history_from_db()
         pairings = pairing_logic.generate_swiss_pairs(players, history)
-
     db.add_pairings_to_db(pairings, next_round)
     
-    for p1_sr_no, p2_sr_no in pairings:
-        if p2_sr_no is None:
-            db.update_player_score_in_db(p1_sr_no, 1.0)
-            flash('BYE point awarded successfully.', 'info')
+    # Auto-win byes
+    for p1, p2 in pairings:
+        if p2 is None:
+            db.update_player_score_in_db(p1, 1.0)
             break
-
-    flash(f'Round {next_round} pairings generated successfully!', 'success')
+            
+    flash(f'Round {next_round} pairings generated!', 'success')
     return redirect(url_for('main.view_pairings'))
-
 
 @bp.route('/pairings')
 def view_pairings():
-    """Displays the current pairings."""
     pairings = db.get_current_pairings_from_db()
     current_round = db.get_latest_round_number()
     return render_template('pairings.html', pairings=pairings, current_round=current_round)
 
-
 @bp.route('/record-result', methods=('POST',))
 def record_result():
-    """Handles result changes, reversing old scores and applying new ones."""
     table_no = int(request.form['table_no'])
     new_result = request.form['result']
     player1_sr_no = int(request.form['player1_sr_no'])
@@ -117,45 +100,88 @@ def record_result():
     old_match = db.get_match_by_table_no(table_no)
     old_result = old_match['result']
 
-    # 1. Reverse old score
-    if old_result == '1-0':
-        db.update_player_score_in_db(player1_sr_no, -1.0)
-    elif old_result == '0-1' and player2_sr_no:
-        db.update_player_score_in_db(player2_sr_no, -1.0)
+    # Reverse old score
+    if old_result == '1-0': db.update_player_score_in_db(player1_sr_no, -1.0)
+    elif old_result == '0-1' and player2_sr_no: db.update_player_score_in_db(player2_sr_no, -1.0)
     elif old_result == '0.5-0.5':
         db.update_player_score_in_db(player1_sr_no, -0.5)
-        if player2_sr_no:
-            db.update_player_score_in_db(player2_sr_no, -0.5)
+        if player2_sr_no: db.update_player_score_in_db(player2_sr_no, -0.5)
 
-    # 2. Apply new result
+    # Apply new result
     db.update_match_result_in_db(table_no, new_result)
-
-    # 3. Add new score
-    if new_result == '1-0':
-        db.update_player_score_in_db(player1_sr_no, 1.0)
-    elif new_result == '0-1' and player2_sr_no:
-        db.update_player_score_in_db(player2_sr_no, 1.0)
+    if new_result == '1-0': db.update_player_score_in_db(player1_sr_no, 1.0)
+    elif new_result == '0-1' and player2_sr_no: db.update_player_score_in_db(player2_sr_no, 1.0)
     elif new_result == '0.5-0.5':
         db.update_player_score_in_db(player1_sr_no, 0.5)
-        if player2_sr_no:
-            db.update_player_score_in_db(player2_sr_no, 0.5)
+        if player2_sr_no: db.update_player_score_in_db(player2_sr_no, 0.5)
             
-    flash(f'Result for Board {request.form["board_display_number"]} updated!', 'success')
+    flash(f'Result updated!', 'success')
     return redirect(url_for('main.view_pairings'))
-
 
 @bp.route('/conclude-round', methods=('POST',))
 def conclude_round():
-    """Finalizes the current round."""
     current_round = db.get_latest_round_number()
     db.conclude_round_in_db()
     flash(f'Round {current_round} has been concluded.', 'success')
     return redirect(url_for('main.index'))
 
+# --- HISTORY & END TOURNAMENT ROUTES ---
 
-@bp.route('/reset-tournament', methods=('POST',))
-def reset_tournament():
-    """Resets the tournament by deleting all data."""
+@bp.route('/end-tournament', methods=('POST',))
+def end_tournament():
+    # Get name from Session (preferred) or form
+    tournament_name = session.get('tournament_name') or request.form.get('tournament_name')
+    
+    if not tournament_name:
+        flash("Error: Tournament name missing.", "error")
+        return redirect(url_for('main.index'))
+
+    # Calculate Final Standings
+    raw_players = db.get_all_players_from_db()
+    matches = db.get_all_finished_matches_from_db()
+    final_standings = pairing_logic.calculate_standings_with_tiebreaks(raw_players, matches)
+    
+    # Archive
+    tournament_id = db.save_tournament_to_history(tournament_name, final_standings)
+    
+    # Clear Session to allow new tournament
+    session.pop('tournament_name', None)
+    
+    flash(f'Tournament "{tournament_name}" archived successfully!', 'success')
+    return redirect(url_for('main.tournament_details', tournament_id=tournament_id, is_fresh=1))
+
+@bp.route('/history')
+def history():
+    tournaments = db.get_all_tournaments()
+    return render_template('history.html', tournaments=tournaments)
+
+@bp.route('/history/<int:tournament_id>')
+def tournament_details(tournament_id):
+    is_fresh = request.args.get('is_fresh', 0)
+    metadata = db.get_tournament_details(tournament_id)
+    standings = db.get_tournament_standings(tournament_id)
+    return render_template('tournament_details.html', tournament=metadata, standings=standings, is_fresh=is_fresh)
+
+@bp.route('/export_history/<int:tournament_id>')
+def export_history(tournament_id):
+    metadata = db.get_tournament_details(tournament_id)
+    standings = db.get_tournament_standings(tournament_id)
+    
+    si = io.StringIO()
+    cw = csv.writer(si)
+    cw.writerow(['Rank', 'Name', 'Rating', 'Points', 'Tiebreak (Buchholz)'])
+    for p in standings:
+        cw.writerow([p['rank'], p['name'], p['rating'], p['points'], p['buchholz']])
+
+    output = make_response(si.getvalue())
+    filename = f"{metadata['name'].replace(' ', '_')}_results.csv"
+    output.headers["Content-Disposition"] = f"attachment; filename={filename}"
+    output.headers["Content-type"] = "text/csv"
+    return output
+
+@bp.route('/reset-and-home')
+def reset_and_home():
     db.reset_tournament_in_db()
-    flash('Tournament has been reset. All players and pairings deleted.', 'success')
+    session.pop('tournament_name', None) # Clear session
+    flash('Board cleared.', 'success')
     return redirect(url_for('main.index'))
