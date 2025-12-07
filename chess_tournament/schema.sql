@@ -1,10 +1,18 @@
--- Drop existing tables
+-- 1. NEW: User Table for Logins
+DROP TABLE IF EXISTS user;
+CREATE TABLE user (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL
+);
+
+-- 2. EXISTING: Drop existing game tables
 DROP TABLE IF EXISTS players;
 DROP TABLE IF EXISTS pairings;
 DROP TABLE IF EXISTS tournaments;
 DROP TABLE IF EXISTS history_standings;
 
--- Active Tournament Tables
+-- 3. EXISTING: Active Tournament Tables
 CREATE TABLE players(
     SrNo INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
@@ -22,7 +30,7 @@ CREATE TABLE pairings(
     FOREIGN KEY (player2_SrNo) REFERENCES players(SrNo)
 );
 
--- History / Archiving Tables
+-- 4. EXISTING: History / Archiving Tables
 CREATE TABLE tournaments(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,

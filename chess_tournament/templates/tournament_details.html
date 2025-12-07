@@ -1,63 +1,63 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    
-    {% if is_fresh %}
-    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 shadow-md" role="alert">
-        <p class="font-bold">Tournament Concluded!</p>
-        <p>The results have been successfully archived. You can now export the data or clear the board for a new event.</p>
-    </div>
-    {% endif %}
 
-    <div class="bg-white p-8 rounded-lg shadow-md">
-        <div class="flex justify-between items-center mb-6 border-b pb-4">
+{% if is_fresh %}
+<div class="alert alert-success border-0 shadow-sm mb-4 d-flex align-items-center" role="alert">
+    <span class="fs-4 me-2">🎉</span>
+    <div>
+        <strong>Tournament Concluded!</strong> The results have been successfully archived.
+    </div>
+</div>
+{% endif %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-end mb-4">
             <div>
-                <h1 class="text-3xl font-bold">{{ tournament.name }}</h1>
-                <p class="text-gray-500">Concluded: {{ tournament.date_concluded }}</p>
+                <h6 class="text-uppercase text-muted fw-bold ls-1 mb-1">Final Standings</h6>
+                <h1 class="fw-bold mb-0">{{ tournament.name }}</h1>
+                <p class="text-muted small mb-0">{{ tournament.date_concluded }}</p>
             </div>
-            
-            <div class="flex gap-4">
-                <a href="{{ url_for('main.export_history', tournament_id=tournament.id) }}" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-md hover:bg-indigo-700 transition duration-300 shadow-md">
-                    Download Excel/CSV
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('main.export_history', tournament_id=tournament.id) }}" class="btn btn-success fw-bold shadow-sm">
+                    📥 Download CSV
                 </a>
-                
-                {% if is_fresh %}
-                <a href="{{ url_for('main.reset_and_home') }}" class="bg-gray-800 text-white font-bold py-2 px-6 rounded-md hover:bg-gray-900 transition duration-300 shadow-md">
-                    Done / Go Home
-                </a>
-                {% else %}
-                <a href="{{ url_for('main.history') }}" class="bg-gray-500 text-white font-bold py-2 px-6 rounded-md hover:bg-gray-600 transition duration-300">
+                <a href="{{ url_for('main.history') }}" class="btn btn-outline-secondary fw-bold">
                     Back to History
                 </a>
-                {% endif %}
             </div>
         </div>
-        
-        <h2 class="text-xl font-bold mb-4">Final Standings</h2>
-        <div class="overflow-x-auto">
-            <table class="min-w-full bg-white border rounded-lg">
-                <thead class="bg-gray-100">
-                    <tr>
-                        <th class="py-2 px-4 text-left">Rank</th>
-                        <th class="py-2 px-4 text-left">Name</th>
-                        <th class="py-2 px-4 text-left">Rating</th>
-                        <th class="py-2 px-4 text-left">Points</th>
-                        <th class="py-2 px-4 text-left">Tiebreak</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in standings %}
-                    <tr class="border-b">
-                        <td class="py-2 px-4 font-bold">{{ p.rank }}</td>
-                        <td class="py-2 px-4">{{ p.name }}</td>
-                        <td class="py-2 px-4">{{ p.rating }}</td>
-                        <td class="py-2 px-4 font-bold">{{ p.points }}</td>
-                        <td class="py-2 px-4 text-gray-600">{{ p.buchholz }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+        <!-- Standings Table -->
+        <div class="card shadow-sm border-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-primary text-white">
+                        <tr>
+                            <th class="py-3 ps-4">Rank</th>
+                            <th class="py-3">Player Name</th>
+                            <th class="py-3">Rating</th>
+                            <th class="py-3 fw-bold">Total Points</th>
+                            <th class="py-3">Tiebreak (Buchholz)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in standings %}
+                        <tr class="{{ 'bg-light' if loop.index <= 3 }}">
+                            <td class="ps-4">
+                                {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}#{{ p.rank }}{% endif %}
+                            </td>
+                            <td class="fw-semibold">{{ p.name }}</td>
+                            <td class="text-muted">{{ p.rating }}</td>
+                            <td><span class="badge bg-dark fs-6">{{ p.points }}</span></td>
+                            <td class="text-muted small">{{ p.buchholz }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

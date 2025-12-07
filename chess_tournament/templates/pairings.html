@@ -1,72 +1,154 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-<div class="bg-white p-6 rounded-lg shadow-md">
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h1 class="text-3xl font-bold">Pairings for Round {{ current_round }}</h1>
-            <p class="text-gray-600">Enter results for each match below.</p>
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h6 class="text-uppercase text-muted fw-bold ls-1 mb-1">Current Matchups</h6>
+                <h2 class="fw-bold mb-0">Round {{ current_round }} Pairings</h2>
+            </div>
+            <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary fw-bold">
+                &larr; Back to Dashboard
+            </a>
         </div>
-        <!-- "Conclude Round" Button remains unchanged -->
-        <form action="{{ url_for('main.conclude_round') }}" method="post" onsubmit="return confirm('Are you sure you want to conclude this round? Any remaining games will be marked as a 0-0 forfeit.');">
-            <button type="submit" class="bg-red-500 text-white font-bold py-2 px-4 rounded-md hover:bg-red-600 transition duration-300">
-                Conclude Round
-            </button>
-        </form>
-    </div>
-    
-    <div class="overflow-x-auto">
-        <table class="min-w-full bg-white">
-            <thead class="bg-gray-200">
-                <tr>
-                    <th class="py-2 px-4 text-left">Board</th>
-                    <th class="py-2 px-4 text-left">White</th>
-                    <th class="py-2 px-4 text-left">Black</th>
-                    <th class="py-2 px-4 text-left">Result</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for pairing in pairings %}
-                <tr class="border-b">
-                    <td class="py-2 px-4 font-semibold">{{ loop.index }}</td>
-                    <td class="py-2 px-4">{{ pairing.player1_name }}</td>
-                    <td class="py-2 px-4">
-                        {% if pairing.player2_name %}
-                            {{ pairing.player2_name }}
-                        {% else %}
-                            <span class="text-gray-500 italic">(BYE)</span>
-                        {% endif %}
-                    </td>
-                    <td class="py-2 px-4">
-                        <!-- This logic now always shows the dropdown for playable games -->
-                        {% if pairing.player2_name is none %}
-                            <span class="font-semibold">1-0</span> <!-- Auto-win for bye -->
-                        {% else %}
-                            <form action="{{ url_for('main.record_result') }}" method="post">
-                                <input type="hidden" name="board_display_number" value="{{ loop.index }}">
-                                <input type="hidden" name="table_no" value="{{ pairing.Table_No }}">
-                                <input type="hidden" name="player1_sr_no" value="{{ pairing.player1_SrNo }}">
-                                <input type="hidden" name="player2_sr_no" value="{{ pairing.player2_SrNo if pairing.player2_SrNo else '' }}">
-                                <select name="result" class="border border-gray-300 rounded-md p-1" onchange="this.form.submit()">
-                                    <!-- The selected option is now determined by the current result in the database -->
-                                    <option disabled {% if pairing.result == 'pending' %}selected{% endif %}>Select Result</option>
-                                    <option value="1-0" {% if pairing.result == '1-0' %}selected{% endif %}>1-0</option>
-                                    <option value="0-1" {% if pairing.result == '0-1' %}selected{% endif %}>0-1</option>
-                                    <option value="0.5-0.5" {% if pairing.result == '0.5-0.5' %}selected{% endif %}>½ - ½</option>
-                                    <option value="0-0" {% if pairing.result == '0-0' %}selected{% endif %}>0-0</option>
-                                </select>
-                            </form>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="4" class="py-4 px-4 text-center text-gray-500">No pairings have been generated yet.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-uppercase text-secondary small">
+                            <tr>
+                                <th class="py-3 ps-4">Table</th>
+                                <th class="py-3">White</th>
+                                <th class="py-3 text-center">Result</th>
+                                <th class="py-3">Black</th>
+                                <th class="py-3 text-end pe-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in pairings %}
+                            <tr id="row-{{ p.Table_No or p.table_no }}">
+                                <!-- FIX 1: Use loop.index for display (1, 2, 3...) -->
+                                <td class="ps-4 fw-bold text-muted">{{ loop.index }}</td>
+                                
+                                <td>
+                                    <span class="fw-semibold text-dark">{{ p.player1_name or p.p1_name }}</span>
+                                    <span class="badge bg-light text-dark border ms-1">{{ p.player1_rating or p.p1_rating }}</span>
+                                </td>
+
+                                <!-- Result Badge (Updates dynamically) -->
+                                <td class="text-center result-badge">
+                                    {% if p.result == 'pending' %}
+                                        <span class="badge bg-warning text-dark">vs</span>
+                                    {% else %}
+                                        <span class="badge bg-success">{{ p.result }}</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if p.player2_name or p.p2_name %}
+                                        <span class="fw-semibold text-dark">{{ p.player2_name or p.p2_name }}</span>
+                                        <span class="badge bg-light text-dark border ms-1">{{ p.player2_rating or p.p2_rating }}</span>
+                                    {% else %}
+                                        <em class="text-muted">BYE</em>
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-end pe-4">
+                                    {% if p.player2_name or p.p2_name %} 
+                                    <!-- FIX 2: onsubmit="submitResult" prevents page reload -->
+                                    <form onsubmit="submitResult(event)" action="{{ url_for('main.record_result') }}" method="post" class="d-flex justify-content-end gap-2">
+                                        
+                                        <!-- Hidden ID for Backend (Keep real DB ID here) -->
+                                        <input type="hidden" name="table_no" value="{{ p.Table_No or p.table_no }}">
+                                        <input type="hidden" name="player1_sr_no" value="{{ p.player1_SrNo or p.p1_id }}">
+                                        <input type="hidden" name="player2_sr_no" value="{{ p.player2_SrNo or p.p2_id }}">
+                                        <input type="hidden" name="board_display_number" value="{{ loop.index }}">
+
+                                        <!-- Select: Pre-selects saved value -->
+                                        <select name="result" class="form-select form-select-sm" style="width: 110px;">
+                                            <option value="1-0" {% if p.result == '1-0' %}selected{% endif %}>1 - 0</option>
+                                            <option value="0.5-0.5" {% if p.result == '0.5-0.5' %}selected{% endif %}>½ - ½</option>
+                                            <option value="0-1" {% if p.result == '0-1' %}selected{% endif %}>0 - 1</option>
+                                        </select>
+                                        
+                                        <button type="submit" class="btn btn-primary btn-sm fw-bold shadow-sm">✓</button>
+                                    </form>
+                                    {% else %}
+                                        <span class="text-success small fw-bold">Auto-Win</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    No pairings generated yet.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card-footer bg-light p-3 d-flex justify-content-between align-items-center">
+                <small class="text-muted">Save results individually before concluding.</small>
+                <form action="{{ url_for('main.conclude_round') }}" method="post">
+                    <button type="submit" class="btn btn-dark fw-bold shadow-sm" onclick="return confirm('Lock this round? This cannot be undone.')">
+                        Conclude Round &rarr;
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
-{% endblock %}
 
+<!-- JAVASCRIPT FOR AJAX SUBMISSION -->
+<script>
+async function submitResult(event) {
+    event.preventDefault(); // Stop page reload
+    const form = event.target;
+    const btn = form.querySelector('button');
+    const originalText = btn.innerHTML;
+    
+    // UI Feedback: Show spinner
+    btn.disabled = true;
+    btn.innerHTML = '...';
+
+    try {
+        const formData = new FormData(form);
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            // Success: Update the result badge visually
+            const row = form.closest('tr');
+            const resultBadge = row.querySelector('.result-badge');
+            const resultValue = formData.get('result');
+            
+            resultBadge.innerHTML = `<span class="badge bg-success">${resultValue}</span>`;
+            
+            // Optional: Briefly turn button green
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-success');
+            setTimeout(() => {
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-primary');
+            }, 1000);
+        } else {
+            alert("Error saving result. Please try again.");
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert("Connection error.");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+</script>
+{% endblock %}

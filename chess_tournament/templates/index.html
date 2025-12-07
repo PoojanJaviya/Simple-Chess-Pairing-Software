@@ -2,121 +2,156 @@
 
 {% block content %}
 
-<!-- STATE 1: NO TOURNAMENT STARTED (Ask Name First) -->
+<!-- SECTION 1: START SCREEN (If no tournament is active) -->
 {% if not tournament_name %}
-<div class="max-w-md mx-auto mt-10">
-    <div class="bg-white p-8 rounded-lg shadow-lg border-t-4 border-blue-600">
-        <h2 class="text-3xl font-bold mb-2 text-gray-800">Start New Tournament</h2>
-        <p class="text-gray-600 mb-6">Enter a name to begin the pairing process.</p>
-        
-        <form action="{{ url_for('main.set_tournament_name') }}" method="post">
-            <div class="mb-5">
-                <label class="block text-gray-700 font-bold mb-2">Tournament Name</label>
-                <input type="text" name="tournament_name" placeholder="e.g. Sunday Rapid Open" required autofocus
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+<div class="row justify-content-center min-vh-50 align-items-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-primary text-white text-center py-4">
+                <h2 class="h3 mb-0 fw-bold">🏆 New Tournament</h2>
             </div>
-            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-300 text-lg">
-                Create Tournament &rarr;
-            </button>
-        </form>
+            <div class="card-body p-5">
+                <p class="text-muted text-center mb-4">Enter a name to initialize the pairing system.</p>
+                
+                <form action="{{ url_for('main.set_tournament_name') }}" method="post">
+                    <div class="form-floating mb-3">
+                        <input type="text" name="tournament_name" class="form-control form-control-lg" id="tName" placeholder="Tournament Name" required autofocus>
+                        <label for="tName">Tournament Name</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 btn-lg fw-bold shadow-sm">Start Event &rarr;</button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- STATE 2: DASHBOARD (Name is set) -->
+<!-- SECTION 2: DASHBOARD (Active Tournament) -->
 {% else %}
-<div class="mb-6 flex justify-between items-center border-b pb-4">
+
+<!-- Dashboard Header -->
+<div class="bg-dark text-white rounded-3 p-4 mb-4 shadow-sm d-flex justify-content-between align-items-center">
     <div>
-        <h1 class="text-3xl font-bold text-gray-800">{{ tournament_name }}</h1>
-        <p class="text-sm text-gray-500">Tournament in Progress</p>
+        <h6 class="text-uppercase text-secondary mb-1 ls-1">Active Event</h6>
+        <h1 class="h2 fw-bold mb-0 text-white">{{ tournament_name }}</h1>
     </div>
-    <a href="{{ url_for('main.reset_and_home') }}" onclick="return confirm('Quit this tournament? Data will be lost.')" class="text-red-500 hover:text-red-700 font-medium">
-        Quit / Reset
+    <a href="{{ url_for('main.reset_and_home') }}" onclick="return confirm('Are you sure? This will delete all current progress.')" class="btn btn-outline-danger btn-sm">
+        &times; Quit / Reset
     </a>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <!-- Player Registration Form -->
-    <div class="md:col-span-1">
-        <div class="bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-2xl font-bold mb-4">Register Player</h2>
-            <form action="{{ url_for('main.index') }}" method="post">
-                <div class="mb-4">
-                    <label for="name" class="block text-gray-700 font-semibold mb-2">Player Name</label>
-                    <input type="text" id="name" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+<div class="row g-4">
+    <!-- LEFT COLUMN: Quick Actions -->
+    <div class="col-lg-4">
+        
+        <!-- 1. Quick Add Player Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                <h5 class="fw-bold text-primary mb-0">Add Player</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('main.index') }}" method="post">
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <label class="small text-muted fw-bold">Player Name</label>
+                            <input type="text" name="name" class="form-control" placeholder="e.g. Magnus Carlsen" required>
+                        </div>
+                        <div class="col-7">
+                            <label class="small text-muted fw-bold">Rating</label>
+                            <input type="number" name="rating" class="form-control" placeholder="1200" required>
+                        </div>
+                        <div class="col-5 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100 fw-bold">
+                                + Add
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 2. Status Card -->
+        <div class="card shadow-sm border-0 bg-light">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small fw-bold">Current Status</h6>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <span class="display-6 fw-bold text-dark">{{ current_round }}</span>
+                        <span class="text-muted small">Rounds Played</span>
+                    </div>
+                    <div>
+                        <span class="display-6 fw-bold text-dark">{{ players|length }}</span>
+                        <span class="text-muted small">Players</span>
+                    </div>
                 </div>
-                <div class="mb-4">
-                    <label for="rating" class="block text-gray-700 font-semibold mb-2">Rating</label>
-                    <input type="number" id="rating" name="rating" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300">Add Player</button>
-            </form>
+            </div>
         </div>
     </div>
 
-    <!-- Player List and Standings -->
-    <div class="md:col-span-2">
-        <div class="bg-white p-6 rounded-lg shadow-md">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold">Standings (Round {{ current_round }})</h2>
-                <div class="flex gap-2">
-                    <form action="{{ url_for('main.generate_pairings') }}" method="post">
-                        <button type="submit" class="bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 transition duration-300">
-                            {% if current_round == 0 %}
-                                Generate Round 1 Pairings
-                            {% else %}
-                                Generate Round {{ current_round + 1 }} Pairings
-                            {% endif %}
-                        </button>
-                    </form>
-                </div>
+    <!-- RIGHT COLUMN: Standings & Controls -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0">Standings</h5>
+                
+                <!-- Pairing Button -->
+                <form action="{{ url_for('main.generate_pairings') }}" method="post">
+                    <button type="submit" class="btn btn-success fw-bold shadow-sm">
+                        {% if current_round == 0 %}
+                            🚀 Start Round 1
+                        {% else %}
+                            ⚡ Generate Round {{ current_round + 1 }}
+                        {% endif %}
+                    </button>
+                </form>
             </div>
-            <div class="overflow-x-auto mb-6">
-                <table class="min-w-full bg-white">
-                    <thead class="bg-gray-200">
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary small text-uppercase">
                         <tr>
-                            <th class="py-2 px-4 text-left">Rank</th>
-                            <th class="py-2 px-4 text-left">Name</th>
-                            <th class="py-2 px-4 text-left">Rating</th>
-                            <th class="py-2 px-4 text-left">Points</th>
-                            <th class="py-2 px-4 text-left text-gray-600 text-sm">Tiebreak</th>
+                            <th class="ps-4">Rank</th>
+                            <th>Name</th>
+                            <th>Rating</th>
+                            <th class="fw-bold text-dark">Points</th>
+                            <th>Buchholz</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for player in players %}
-                        <tr class="border-b">
-                            <td class="py-2 px-4 font-semibold">{{ loop.index }}</td>
-                            <td class="py-2 px-4">{{ player.name }}</td>
-                            <td class="py-2 px-4">{{ player.rating }}</td>
-                            <td class="py-2 px-4 font-bold">{{ player.points }}</td>
-                            <td class="py-2 px-4 text-gray-600">{{ player.buchholz }}</td>
+                    <tbody class="border-top-0">
+                        {% for p in players %}
+                        <tr>
+                            <td class="ps-4 text-muted fw-bold">#{{ loop.index }}</td>
+                            <td class="fw-semibold text-dark">{{ p.name }}</td>
+                            <td class="text-muted">{{ p.rating }}</td>
+                            <td><span class="badge bg-primary fs-6">{{ p.points }}</span></td>
+                            <td class="text-muted small">{{ p.buchholz }}</td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="5" class="py-4 px-4 text-center text-gray-500">No players registered yet.</td>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <div class="py-4">
+                                    <h1 class="display-4">👥</h1>
+                                    <p class="mb-0">No players registered yet.</p>
+                                    <p class="small">Use the form on the left to add participants.</p>
+                                </div>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
 
-            <!-- END TOURNAMENT SECTION -->
+            <!-- Footer: End Tournament -->
             {% if current_round > 0 %}
-            <div class="border-t pt-6 bg-gray-50 p-4 rounded-md">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h3 class="text-lg font-bold">Conclude Tournament</h3>
-                        <p class="text-sm text-gray-600">Archive results for <strong>{{ tournament_name }}</strong></p>
-                    </div>
+            <div class="card-footer bg-white border-top-0 py-3">
+                <div class="d-flex justify-content-end">
                     <form action="{{ url_for('main.end_tournament') }}" method="post">
-                        <!-- Name is already in session, but we can pass it implicitly -->
-                        <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-md hover:bg-indigo-700 transition duration-300" onclick="return confirm('Archive results and end tournament?');">
-                            End & Save
+                        <button type="submit" class="btn btn-warning text-dark fw-bold" onclick="return confirm('Archive this tournament to history?')">
+                            🏁 Conclude Tournament
                         </button>
                     </form>
                 </div>
             </div>
             {% endif %}
-            
         </div>
     </div>
 </div>
